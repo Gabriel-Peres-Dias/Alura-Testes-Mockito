@@ -15,8 +15,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class FinalizarLeilaoServiceTest {
 
@@ -64,6 +63,21 @@ class FinalizarLeilaoServiceTest {
 
         verify(leilaoDao).salvar(leilao);
         verify(enviadorDeEmails).enviarEmailVencedorLeilao(leilao.getLanceVencedor());
+    }
+
+    @Test
+    void naoDeveriaDeveriaEnviarEmailParaVencedorDoLeilaoEmCasoDeErroAoEncerrarLeilao() {
+        List<Leilao> leiloes = leiloes();
+
+        when(leilaoDao.buscarLeiloesExpirados()).thenReturn(leiloes);
+        //metódo thenThow usado para forçar o resultado do método jogar uma exception
+        when(leilaoDao.salvar(any())).thenThrow(RuntimeException.class);
+
+        try {
+            service.finalizarLeiloesExpirados();
+            verifyNoInteractions(enviadorDeEmails);
+        } catch (Exception e) {}
+
     }
 
 
