@@ -13,10 +13,11 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.*;
 
 
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class GeradorDePagamentoTest {
 
@@ -28,21 +29,36 @@ public class GeradorDePagamentoTest {
     @Captor
     private ArgumentCaptor<Pagamento> captor;
 
+    @Mock
+    private Clock clock;
+
+
     @BeforeEach
     public void inicializar() {
         MockitoAnnotations.initMocks(this);
-        this.service = new GeradorDePagamento(pagamentoDao);
+        this.service = new GeradorDePagamento(pagamentoDao, clock);
     }
 
     @Test
     public void deveGerarPagamentoParaVencedorDoLeilao() {
+        //crio os valores que precisarei no teste
         Leilao leilao = leilao();
         Lance lanceVencedor = leilao.getLanceVencedor();
+        LocalDate data = LocalDate.of(2023, 03, 10);
+        Instant instant = data.atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+        //quando isso acontecer ele vai receber isso
+        when(clock.instant()).thenReturn(instant);
+        when(clock.getZone()).thenReturn(ZoneId.systemDefault());
+
+        //metodo motivado a criar o teste
         service.gerarPagamento(lanceVencedor);
 
+        //verifico se esse método fez isso
         verify(pagamentoDao).salvar(captor.capture());
         Pagamento pagamento = captor.getValue();
 
+        //asserto se o resultado dos dados recebidos do método foram esses
         Assertions.assertEquals(lanceVencedor.getValor(), pagamento.getValor());
         Assertions.assertEquals(LocalDate.now().plusDays(1), pagamento.getVencimento());
         Assertions.assertEquals(lanceVencedor.getUsuario(), pagamento.getUsuario());
