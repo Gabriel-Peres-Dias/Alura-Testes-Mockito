@@ -2,6 +2,7 @@ import br.com.alura.leilao.dao.LeilaoDao;
 import br.com.alura.leilao.model.Lance;
 import br.com.alura.leilao.model.Leilao;
 import br.com.alura.leilao.model.Usuario;
+import br.com.alura.leilao.service.EnviadorDeEmails;
 import br.com.alura.leilao.service.FinalizarLeilaoService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,10 +25,13 @@ class FinalizarLeilaoServiceTest {
     @Mock
     private LeilaoDao leilaoDao;
 
+    @Mock
+    private EnviadorDeEmails enviadorDeEmails;
+
     @BeforeEach
     public void beforeEach() {
         MockitoAnnotations.initMocks(this);
-        this.service = new FinalizarLeilaoService(leilaoDao);
+        this.service = new FinalizarLeilaoService(leilaoDao, enviadorDeEmails);
     }
 
     @Test
@@ -46,6 +50,20 @@ class FinalizarLeilaoServiceTest {
 
         //verificar se o dao feito, no caso o que ele salvou foi esse primeiro leilao
         verify(leilaoDao).salvar(leilao);
+    }
+
+    @Test
+    void deveriaDeveriaEnviarEmailParaVencedorDoLeilao() {
+        List<Leilao> leiloes = leiloes();
+
+        when(leilaoDao.buscarLeiloesExpirados()).thenReturn(leiloes);
+        service.finalizarLeiloesExpirados();
+
+        Leilao leilao = leiloes.get(0);
+        Lance lanceVencedor = leilao.getLanceVencedor();
+
+        verify(leilaoDao).salvar(leilao);
+        verify(enviadorDeEmails).enviarEmailVencedorLeilao(leilao.getLanceVencedor());
     }
 
 
